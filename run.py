@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+from db import save_line
 import requests
 import json
 import csv
@@ -16,6 +16,13 @@ serialization = SerializationMiddleware(JSONStorage)
 serialization.register_serializer(DateTimeSerializer(), 'TinyDate')
 db = TinyDB('db.json', storage=serialization)
 
+save_line("", "", "")
+
+aftalenr = "1343950"
+fra = "2021-01-01T23:00:00.000Z"
+til = "2022-12-31T23:00:00.000Z"
+email = "mads.eckardt@gmail.com"
+password = "ZxmBYN3CX<Y[iW!N?Gpv"
 
 cookieJar = None
 
