@@ -1,28 +1,24 @@
 #!/usr/bin/env python3
-from db import save_line
+
+# https://python.readthedocs.io/en/v2.7.2/howto/curses.html
+
+from db import save_document, search_documents
+
 import requests
 import json
 import csv
 import sys
-
 from datetime import datetime
-from tinydb import TinyDB, Query, where
-from tinydb.storages import JSONStorage
-from tinydb_serialization import SerializationMiddleware
-from tinydb_serialization.serializers import DateTimeSerializer
 from rich.progress import track
 from rich import print
 import plotext as plt
 import os
+import pytz
 os.system('cls' if os.name == 'nt' else 'clear')
 
-serialization = SerializationMiddleware(JSONStorage)
-serialization.register_serializer(DateTimeSerializer(), 'TinyDate')
-db = TinyDB('db.json', storage=serialization)
-
 aftalenr = "1343950"
-fra = "2021-01-01T23:00:00.000Z"
-til = "2022-12-31T23:00:00.000Z"
+fra = datetime.now().replace(year=2021, hour=23, minute=00, second=00, microsecond=0).isoformat() + 'Z'
+til = datetime.now().replace(hour=23, minute=00, second=00, microsecond=0).isoformat() + 'Z'
 email = "mads.eckardt@gmail.com"
 password = "ZxmBYN3CX<Y[iW!N?Gpv"
 
@@ -47,7 +43,8 @@ if(len(sys.argv) > 1 and sys.argv[1] == 'refresh'):
     cookieJar = req.cookies
 
     print_status("Fetching data")
-    req = requests.post("https://www.ok.dk/min-ok-forside/el-overblik/forbrug/downloadrawdata?aftalenr=1343950&fra=2021-01-01T00:00:00.000Z&til=2022-12-31T23:00:00.000Z", cookies=cookieJar)
+    print(f'https://www.ok.dk/min-ok-forside/el-overblik/forbrug/downloadrawdata?aftalenr={aftalenr}&fra={fra}&til={til}')
+    req = requests.post(f'https://www.ok.dk/min-ok-forside/el-overblik/forbrug/downloadrawdata?aftalenr={aftalenr}&fra={fra}&til={til}', cookies=cookieJar)
 
     print_status("Preparing data")
     csv_data = req.text.replace("\"\"", '').replace('=', '')
@@ -60,36 +57,30 @@ if(len(sys.argv) > 1 and sys.argv[1] == 'refresh'):
 
     for line in track(range(lines_num), description="Processing..."):
         row = next(reader);
-
         from_datetime = datetime.strptime(row[0], "%d-%m-%Y %H:%M")
         to_datetime = datetime.strptime(row[1], "%d-%m-%Y %H:%M")
         kwh = float(row[2].replace(',', '.'))
-        query = Query()
-        if(len(db.search(query.from_datetime == from_datetime.timestamp() and query.to_datetime == to_datetime.timestamp())) == 0):
-            doc = {
-                'from_datetime': from_datetime.timestamp(),
-                'to_datetime': to_datetime.timestamp(),
-                'kwh': kwh
-            }
-            db.insert(doc)
+        save_document(from_datetime, to_datetime, kwh)
 
-query = Query()
-arr = db.search(query.from_datetime > datetime(2022, 1, 15).timestamp())
 
-names = list(map(lambda x : plt.datetime.datetime_to_string(datetime(x.get('from_datetime')).iso()), arr))
-values = list(map(lambda x : x.get('kwh'), arr))
-print(names)
-plt.bar(names, values, width = 0.3) # or shorter orientation = 'h'
-plt.title("Most Favoured Pizzas in the World")
-plt.clc() # to remove colors
-#plt.plotsize(100, 2 * len(names) - 1 + 4) # 4 = 1 for x numerical ticks + 2 for x axes + 1 for title
-plt.show()
-
-#pizzas = ["Sausage", "Pepperoni", "Mushrooms", "Cheese", "Chicken", "Beef"]
-#percentages = [14, 36, 11, 8, 7, 4]
-
-# plt.bar(pizzas, percentages, orientation = "horizontal", width = 0.3) # or shorter orientation = 'h'
-# plt.title("Most Favoured Pizzas in the World")
+arr = search_documents(datetime(2022, 1, 1), datetime(2022, 1, 30))
+print(arr)
+#
+# os.system('cls' if os.name == 'nt' else 'clear')
+#
+# def to_d(x):
+#     plt.datetime.set_datetime_form(date_form='%H:%M')
+#     t = datetime.fromtimestamp(int(x.get('from_datetime')))
+#     return plt.datetime.datetime_to_string(t)
+#
+#
+# names = list(map(lambda x : to_d(x), arr))
+# values = list(map(lambda x : x.get('kwh'), arr))
+# plt.bar(names, values, width = 0.3)
+# plt.grid(0, 1)
+# plt.ylim(0, 4)
+# plt.title("Strømforbrug")
 # plt.clc() # to remove colors
-# plt.plotsize(100, 2 * len(pizzas) - 1 + 4) # 4 = 1 for x numerical ticks + 2 for x axes + 1 for title
+# plt.xlabel("Tidspunkt")
+# plt.ylabel("kWh")
 # plt.show()
