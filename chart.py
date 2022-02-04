@@ -1,6 +1,6 @@
-from rich.progress import track
-from rich import print
-import plotext as plt
+#from rich.progress import track
+#from rich import print
+#import plotext as plt
 
 # os.system('cls' if os.name == 'nt' else 'clear')
 #
