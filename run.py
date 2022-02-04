@@ -64,7 +64,7 @@ def fetchAll():
 def fetch_between(from_datetime, to_datetime):
     from_datetime = from_datetime.isoformat()
     to_datetime = to_datetime.isoformat()
-    
+
     initialize()
     authorize(email, password)
     csv_data = fetchData(aftalenr, from_datetime, to_datetime)
